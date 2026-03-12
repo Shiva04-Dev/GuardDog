@@ -1,0 +1,54 @@
+{
+  "type": "object",
+  "required": ["type", "timestamp", "status"],
+  "properties": {
+    "type": {
+      "type": "string",
+      "enum": ["telemetry"]
+    },
+    "timestamp": {
+      "type": "number",
+      "description": "Unix timestamp"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["OK", "WARNING", "ERROR"]
+    },
+    "battery": {
+      "type": "number",
+      "description": "Battery voltage"
+    },
+    "cpu_usage": {
+      "type": "number",
+      "description": "CPU load percentage"
+    },
+    "temperature": {
+      "type": "number",
+      "description": "Internal system temperature"
+    },
+    "position": {
+      "type": "object",
+      "properties": {
+        "x": { "type": "number" },
+        "y": { "type": "number" },
+        "z": { "type": "number" }
+      }
+    },
+    "movement": {
+      "type": "object",
+      "properties": {
+        "direction": { "type": "string" },
+        "speed": { "type": "number" }
+      }
+    },
+    "sensors": {
+      "type": "object",
+      "properties": {
+        "obstacle_distance": { "type": "number" },
+        "imu_pitch": { "type": "number" },
+        "imu_roll": { "type": "number" },
+        "imu_yaw": { "type": "number" }
+      }
+    }
+  }
+}
