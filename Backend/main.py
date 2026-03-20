@@ -2,40 +2,34 @@ from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 import asyncio
 import json
 
-# FastAPI will automatically generates docs 
 app = FastAPI(
-    title="Guard Dog Robot API",
-    description="Backend service for API + WebSocket server",
+    title="GuardDog Backend API",
+    description="Backend service for API + WebSocket telemetry",
     version="1.0.0"
 )
 
-
-# REST ENDPOINTS 
-
+# REST ENDPOINTS
 
 @app.get("/")
 async def root():
-    return {"message": "Gaurd Dog Backend Service is running."}
+    return {"message": "GuardDog Backend Service is running."}
 
 @app.get("/api/system-status")
 async def get_status():
-    """Simple REST endpoint to check if the integration layer is alive."""
-    # soon this will query the IPC bridge
+    """Checks if the integration layer is alive."""
     return {"status": "online", "layer": "backend_service"}
 
-# WEBSOCKETS For live telemetry and dashboard
-
+#  WEBSOCKETS
 
 @app.websocket("/ws/telemetry")
 async def websocket_telemetry(websocket: WebSocket):
-    """WebSocket endpoint to stream live robot data to the frontend."""
+    """Streams live mock robot data to the frontend."""
     await websocket.accept()
-    print("Frontend Dashboard connected to telemetry stream.")
+    print("Frontend connected to telemetry stream.")
     
     try:
         while True:
-            #  Simulating data that will eventually 
-            # come from the C++ Firmware via the Integration Layer.
+            # Simulating data that will eventually come from the C++ Firmware
             mock_telemetry = {
                 "battery_pct": 88,
                 "motor_state": "standby",
@@ -43,11 +37,11 @@ async def websocket_telemetry(websocket: WebSocket):
                 "cpu_temp": 45.2
             }
             
-            # Send the JSON payload to the connected dashboard
+            # Send the JSON payload
             await websocket.send_json(mock_telemetry)
             
-            # Async performance: wait 1 second without blocking other requests
+            # Async wait so we don't block the rest of the app
             await asyncio.sleep(1) 
             
     except WebSocketDisconnect:
-        print("Frontend Dashboard disconnected.")
+        print("Frontend disconnected.")
