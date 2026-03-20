@@ -1,79 +1,74 @@
-import zmq
-import time
+"""
+server.py — command source / AI brain.
+
+Publishes commands to connected robot clients, receives telemetry and events.
+Replace the example loop with your real AI / operator interface.
+
+Usage
+─────
+    python server.py
+    python server.py --verbose
+"""
+
+import argparse
 import logging
+import signal
+import sys
+import time
 
-# Setup Logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-logger = logging.getLogger(__name__)
+from ipc.router import IPCRouter
+from ipc.config import TOPIC_TELEMETRY, TOPIC_EVENT
 
-context = zmq.Context()
+log = logging.getLogger("server")
 
-# 1. REP Socket (Bind to Port)
-rep = context.socket(zmq.REP)
-rep.bind("tcp://*:5555")
 
-# 2. PUB Socket (Bind to Port)
-pub = context.socket(zmq.PUB)
-pub.bind("tcp://*:5556")
+def main():
+    parser = argparse.ArgumentParser(description="Robot Dog server")
+    parser.add_argument("--verbose", action="store_true")
+    args = parser.parse_args()
 
-poller = zmq.Poller()
-poller.register(rep, zmq.POLLIN)
+    logging.basicConfig(
+        level=logging.DEBUG if args.verbose else logging.INFO,
+        format="%(asctime)s  %(name)-20s %(levelname)-8s  %(message)s",
+        datefmt="%H:%M:%S",
+    )
 
-logger.info("Server started. Waiting for PI...")
+    router = IPCRouter()
 
-last_heartbeat_time = time.time()
-HEARTBEAT_TIMEOUT = 3
-safe_stop_triggered = False
-last_telemetry_time = 0
+    @router.on_telemetry
+    def handle_tel(msg):
+        log.debug("TEL  battery=%(battery)s  status=%(status)s", msg)
 
-time.sleep(1) # Allow clients to connect
+    @router.on_event
+    def handle_evt(msg):
+        log.warning("EVT  event=%(event)s  severity=%(severity)s", msg)
 
-try:
-    while True:
-        events = dict(poller.poll(timeout=100))
+    router.start()
+    log.info("Server ready. Sending example commands…")
 
-        # Handle Incoming Messages
-        if rep in events:
-            message = rep.recv_json()
-            logger.debug(f"Received: {message}")
+    signal.signal(signal.SIGTERM, lambda *_: sys.exit(0))
 
-            if message.get("type") == "heartbeat":
-                last_heartbeat_time = time.time()
-                rep.send_json({"status": "heartbeat_ack"})
-            else:
-                # Send Movement Command
-                command = {
-                    "type": "command",
-                    "data": {
-                        "action": "move",
-                        "direction": "forward",
-                        "speed": 0.5
-                    }
-                }
-                rep.send_json(command)
-                logger.info("Command sent to PI")
+    # ── Example: send a move command every 5 s ────────────────────────────────
+    cmd_id = 0
+    try:
+        while True:
+            cmd_id += 1
+            router.send_command({
+                "type":      "command",
+                "cmd_id":    cmd_id,
+                "timestamp": time.time(),
+                "data": {
+                    "action":    "move",
+                    "direction": "forward",
+                    "speed":     0.5,
+                },
+            })
+            log.info("Sent move command #%d", cmd_id)
+            time.sleep(5)
 
-        # Heartbeat Safety Check
-        if time.time() - last_heartbeat_time > HEARTBEAT_TIMEOUT:
-            if not safe_stop_triggered:
-                logger.warning(" HEARTBEAT LOST — SAFE STOP TRIGGERED")
-                pub.send_json({"type": "emergency", "data": {"action": "stop"}})
-                safe_stop_triggered = True
-            last_heartbeat_time = time.time()
-        else:
-            safe_stop_triggered = False
+    except KeyboardInterrupt:
+        log.info("Server stopped")
 
-        # Telemetry
-        now = time.time()
-        if now - last_telemetry_time >= 1:
-            pub.send_json({"type": "telemetry", "battery": 11.8})
-            last_telemetry_time = now
 
-        time.sleep(0.01)
-
-except KeyboardInterrupt:
-    logger.info("Server shutting down...")
-finally:
-    rep.close()
-    pub.close()
-    context.term()
+if __name__ == "__main__":
+    main()

@@ -1,0 +1,60 @@
+{
+  "type": "object",
+  "required": ["type", "cmd_id", "timestamp", "data"],
+  "properties": {
+    "type": {
+      "type": "string",
+      "enum": ["command"]
+    },
+    "cmd_id": {
+      "type": "integer",
+      "description": "Unique command identifier"
+    },
+    "timestamp": {
+      "type": "number",
+      "description": "Unix timestamp when command was issued"
+    },
+    "data": {
+      "type": "object",
+      "required": ["action"],
+      "properties": {
+        "action": {
+          "type": "string",
+          "enum": [
+            "move",
+            "turn",
+            "stop",
+            "sit",
+            "stand",
+            "rotate",
+            "patrol",
+            "follow_target",
+            "return_home"
+          ]
+        },
+        "direction": {
+          "type": "string",
+          "enum": ["forward", "backward", "left", "right"]
+        },
+        "speed": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Normalized speed value"
+        },
+        "angle": {
+          "type": "number",
+          "description": "Turning angle in degrees"
+        },
+        "duration": {
+          "type": "number",
+          "description": "Optional action duration in seconds"
+        },
+        "target_id": {
+          "type": "string",
+          "description": "ID of tracked object or human"
+        }
+      }
+    }
+  }
+}

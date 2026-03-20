@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Multi-Camera Dashboard</title>
+<style>
+body { background:#222; color:white; font-family:Arial; text-align:center; }
+img { border:2px solid #fff; margin:10px; }
+</style>
+</head>
+<body>
+<h1>Smart Security Multi-Camera Dashboard</h1>
+{% for cam in cameras %}
+<h3>{{ cam.name }}</h3>
+<img src="{{ cam.url }}" width="640" height="480">
+{% endfor %}
+</body>
+</html>
